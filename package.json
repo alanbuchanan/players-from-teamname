@@ -1,0 +1,16 @@
+{
+  "name": "players-from-teamname",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "dependencies": {
+    "cheerio": "^0.22.0",
+    "tinyreq": "^3.1.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
