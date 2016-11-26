@@ -1,42 +1,61 @@
-"use strict"
+'use strict'
 
 // Import the dependencies
-const cheerio = require("cheerio")
-    , req = require("tinyreq")
-    ;
+const cheerio = require('cheerio');
+const _ = require('lodash');
+const req = require('tinyreq');
 
-const teamName = 'Aston Villa';
+const teamName = 'Chelsea';
 const formattedTeamName = teamName.replace(/ /, '_');
-const playerDOMSelector = "tr.vcard .fn";
+const playerDOMSelector = 'tr.vcard.agent';
 
 // Define the scrape function
-function scrape(url, data, cb) {
-    // 1. Create the request
+function scrape(url, cb) {
     req(url, (err, body) => {
         if (err) {
             return cb(err);
         }
 
-        // 2. Parse the HTML
-        let $ = cheerio.load(body)
-            , pageData = {}
-            ;
+        let $ = cheerio.load(body);
+        let countries = [];
+        let positions = [];
 
-        // 3. Extract the data
-        Object.keys(data).forEach(k => {
-            pageData[k] = $(data[k]).map(function (i, el) {
-                return $(this).text()
-            }).get();
+        // Get names
+        const names = $('tr.vcard.agent .fn').map(function() {
+            return $(this).text()
+        }).get();
+
+
+        // Get countries
+        $('tr.vcard.agent .flagicon a').toArray().forEach(e => {
+            countries.push(e.attribs.title)
         });
 
-        // Send the data in the callback
-        cb(null, pageData);
+        // Get positions
+        $('tr.vcard.agent td a').toArray().forEach(e => {
+            const { title } = e.attribs;
+
+            const possiblePositions = [
+                'goalkeeper',
+                'defender',
+                'midfielder',
+                'forward'
+            ];
+
+            if (_.some(possiblePositions, position => title.toLowerCase().indexOf(position) > -1)) {
+                // Get the first word of the position
+                positions.push(title.split(' ')[0])
+            }
+        });
+
+        cb(null, _.zip(names, countries, positions));
     });
 }
 
 // Extract some data from my website
-scrape(`https://en.wikipedia.org/wiki/${formattedTeamName}_F.C.`, {
-    players: playerDOMSelector
-}, (err, data) => {
-    console.log(err || data);
-});
+scrape(
+    `https://en.wikipedia.org/wiki/${formattedTeamName}_F.C.`,
+    (err, data) => {
+        console.log(err || data);
+    }
+);
