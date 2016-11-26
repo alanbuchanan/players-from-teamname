@@ -5,7 +5,7 @@ const cheerio = require('cheerio');
 const _ = require('lodash');
 const req = require('tinyreq');
 
-const teamName = 'Chelsea';
+const teamName = 'Liverpool';
 const formattedTeamName = teamName.replace(/ /, '_');
 const playerDOMSelector = 'tr.vcard.agent';
 
@@ -17,22 +17,27 @@ function scrape(url, cb) {
         }
 
         let $ = cheerio.load(body);
+        let names = [];
         let countries = [];
         let positions = [];
 
+        const namesSelector = 'tr.vcard.agent .fn';
+        const countriesSelector = 'tr.vcard.agent .flagicon a';
+        const positionsSelector = 'tr.vcard.agent td a';
+
         // Get names
-        const names = $('tr.vcard.agent .fn').map(function() {
-            return $(this).text()
+        names = $(namesSelector).map(function() {
+            return {name: $(this).text()}
         }).get();
 
 
         // Get countries
-        $('tr.vcard.agent .flagicon a').toArray().forEach(e => {
-            countries.push(e.attribs.title)
+        $(countriesSelector).toArray().forEach(e => {
+            countries.push({country: e.attribs.title})
         });
 
         // Get positions
-        $('tr.vcard.agent td a').toArray().forEach(e => {
+        $(positionsSelector).toArray().forEach(e => {
             const { title } = e.attribs;
 
             const possiblePositions = [
@@ -42,14 +47,23 @@ function scrape(url, cb) {
                 'forward'
             ];
 
-            if (_.some(possiblePositions, position => title.toLowerCase().indexOf(position) > -1)) {
+            // This should be optimised to be more specific, because it's targetting too many things.
+            // It's hard to target accurately because of a lack of specificity in markup.
+            if (!!title && _.some(possiblePositions, position => title.toLowerCase().includes(position))) {
                 // Get the first word of the position
-                positions.push(title.split(' ')[0])
+                positions.push({position: title.split(' ')[0]})
             }
         });
 
-        cb(null, _.zip(names, countries, positions));
-    });
+        cb(null, // because no error
+            _.flatten( // because each object is still in its own array
+                _.zip( // because each array is still separate
+                    _.merge( // because each object is separate and should be joined to its sibling objects
+                        names, countries, positions
+                    )
+                )
+            ));
+        });
 }
 
 // Extract some data from my website
