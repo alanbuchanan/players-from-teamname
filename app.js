@@ -7,7 +7,6 @@ const req = require('tinyreq');
 
 const teamName = 'Liverpool';
 const formattedTeamName = teamName.replace(/ /, '_');
-const playerDOMSelector = 'tr.vcard.agent';
 
 // Define the scrape function
 function scrape(url, cb) {
